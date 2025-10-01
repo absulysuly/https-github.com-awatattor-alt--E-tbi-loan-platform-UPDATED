@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/tb-logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="TBi Bank - AI-Powered Loan Assessment Platform" />
+    <title>TBi Bank - Loan Assessment Platform</title>
+    
+    <!-- Preload fonts for better performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+      /* Base font configuration */
+      :root {
+        --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+        --font-arabic: 'Noto Sans Arabic', 'Arial Unicode MS', sans-serif;
+      }
+      
+      body {
+        font-family: var(--font-sans);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        background-color: #f9fafb;
+      }
+      
+      .font-arabic {
+        font-family: var(--font-arabic);
+      }
+      
+      /* RTL support */
+      [dir="rtl"] {
+        text-align: right;
+      }
+      
+      /* Loading spinner */
+      .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <!-- Loading fallback -->
+      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: var(--font-sans);">
+        <div style="text-align: center;">
+          <div class="loading-spinner" style="margin: 0 auto 16px;"></div>
+          <p style="color: #666; margin: 0;">Loading TBi Bank Platform...</p>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
