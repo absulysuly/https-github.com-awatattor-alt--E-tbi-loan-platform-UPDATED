@@ -82,7 +82,7 @@ router.post(
           riskCategory: assessmentResult.riskCategory,
           recommendation: assessmentResult.recommendation,
           confidence: assessmentResult.confidence,
-          factorScores: assessmentResult.factorScores,
+          factorScores: assessmentResult.factorScores as any,
           keyRiskIndicators,
           mitigationSuggestions: assessmentResult.mitigationSuggestions,
           summaryEn: `Risk assessment for ${application.applicant.firstName} ${application.applicant.lastName}: ${assessmentResult.riskCategory} risk with ${assessmentResult.riskScore.toFixed(1)} score. Recommendation: ${assessmentResult.recommendation}`,

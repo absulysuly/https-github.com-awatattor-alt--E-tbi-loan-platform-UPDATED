@@ -1,6 +1,5 @@
 import { prisma } from '../server';
 import { AuditAction, RiskLogLevel } from '@prisma/client';
-import { Request } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 
 export interface AuditLogData {
@@ -71,7 +70,7 @@ export class AuditLogService {
 
     const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
     const userAgent = req.get('user-agent') || 'unknown';
-    const sessionId = req.sessionID || req.get('x-session-id') || 'unknown';
+    const sessionId = req.get('x-session-id') || 'unknown';
 
     await this.log({
       userId: req.user.id,

@@ -11,7 +11,7 @@
     "db:generate": "prisma generate --schema=../prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema=../prisma/schema.prisma",
     "db:migrate:prod": "prisma migrate deploy --schema=../prisma/schema.prisma",
-    "db:seed": "tsx ../prisma/seed.ts",
+    "db:seed": "cd .. && tsx --tsconfig backend/tsconfig.json prisma/seed.ts",
     "db:studio": "prisma studio --schema=../prisma/schema.prisma",
     "db:reset": "prisma migrate reset --schema=../prisma/schema.prisma",
     "test": "jest --coverage",
@@ -19,7 +19,13 @@
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write \"src/**/*.{ts,json}\""
   },
-  "keywords": ["banking", "risk-assessment", "loan", "fintech", "tbi-bank"],
+  "keywords": [
+    "banking",
+    "risk-assessment",
+    "loan",
+    "fintech",
+    "tbi-bank"
+  ],
   "author": "TBi Bank Technology Division",
   "license": "MIT",
   "dependencies": {
@@ -32,6 +38,7 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "tbi-loan-platform": "file:..",
     "zod": "^3.24.1"
   },
   "devDependencies": {

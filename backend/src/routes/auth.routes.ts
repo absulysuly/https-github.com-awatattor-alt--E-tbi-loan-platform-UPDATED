@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../server';
@@ -172,8 +172,8 @@ router.post('/login', authRateLimiter, async (req, res, next) => {
         email: user.email,
         role: user.role,
       },
-      jwtSecret,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      jwtSecret as jwt.Secret,
+      { expiresIn: '7d' }
     );
 
     // Log successful login
@@ -296,8 +296,8 @@ router.post('/refresh', authenticate, async (req: AuthRequest, res, next) => {
         email: req.user.email,
         role: req.user.role,
       },
-      jwtSecret,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      jwtSecret as jwt.Secret,
+      { expiresIn: '7d' }
     );
 
     res.json({
