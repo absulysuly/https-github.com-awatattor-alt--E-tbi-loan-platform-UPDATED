@@ -1,14 +1,3 @@
-/**
- * TBi Bank CSDR Platform - Database Seed Script
- * 
- * Seeds the database with:
- * - 2 users (Admin and Loan Officer)
- * - 1 active risk configuration
- * - 3 sample loan applications with different risk profiles
- * - Sample applicants
- * - Initial audit logs
- */
-
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -17,420 +6,465 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...\n');
 
-  // Clean existing data (in development only!)
-  console.log('🧹 Cleaning existing data...');
-  await prisma.auditLog.deleteMany({});
-  await prisma.document.deleteMany({});
-  await prisma.riskAssessment.deleteMany({});
-  await prisma.loanApplication.deleteMany({});
-  await prisma.applicant.deleteMany({});
-  await prisma.riskConfiguration.deleteMany({});
-  await prisma.user.deleteMany({});
-  console.log('✅ Cleaned\n');
+  // Clean existing data (in development only)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🧹 Cleaning existing data...');
+    await prisma.auditLog.deleteMany();
+    await prisma.riskAssessment.deleteMany();
+    await prisma.document.deleteMany();
+    await prisma.loanApplication.deleteMany();
+    await prisma.applicant.deleteMany();
+    await prisma.riskConfiguration.deleteMany();
+    await prisma.user.deleteMany();
+    console.log('✅ Existing data cleaned\n');
+  }
 
-  // Create Users
-  console.log('👤 Creating users...');
-  const hashedPassword = await bcrypt.hash('demo123', 10);
+  // ==================== CREATE USERS ====================
+  console.log('👥 Creating users...');
+  
+  const hashedPassword = await bcrypt.hash('Password123!', 12);
 
   const admin = await prisma.user.create({
     data: {
       email: 'admin@tbibank.com',
-      name: 'Ahmad Al-Mansour',
       password: hashedPassword,
+      name: 'Admin User',
       role: 'ADMIN',
       mfaEnabled: false,
-      createdBy: 'system'
-    }
+    },
   });
 
-  const loanOfficer = await prisma.user.create({
+  const seniorUnderwriter = await prisma.user.create({
     data: {
-      email: 'officer@tbibank.com',
-      name: 'Sarah Hassan',
+      email: 'senior.underwriter@tbibank.com',
       password: hashedPassword,
+      name: 'Sarah Williams',
+      role: 'SENIOR_UNDERWRITER',
+      mfaEnabled: false,
+    },
+  });
+
+  const loanOfficer1 = await prisma.user.create({
+    data: {
+      email: 'loan.officer1@tbibank.com',
+      password: hashedPassword,
+      name: 'Ahmed Al-Rahman',
       role: 'LOAN_OFFICER',
       mfaEnabled: false,
-      createdBy: admin.id
-    }
+    },
   });
 
-  console.log(`✅ Created users: ${admin.email}, ${loanOfficer.email}\n`);
+  const loanOfficer2 = await prisma.user.create({
+    data: {
+      email: 'loan.officer2@tbibank.com',
+      password: hashedPassword,
+      name: 'Layla Hassan',
+      role: 'LOAN_OFFICER',
+      mfaEnabled: false,
+    },
+  });
 
-  // Create Risk Configuration
+  const underwriter = await prisma.user.create({
+    data: {
+      email: 'underwriter@tbibank.com',
+      password: hashedPassword,
+      name: 'Michael Chen',
+      role: 'UNDERWRITER',
+      mfaEnabled: false,
+    },
+  });
+
+  const riskAnalyst = await prisma.user.create({
+    data: {
+      email: 'risk.analyst@tbibank.com',
+      password: hashedPassword,
+      name: 'Dr. Fatima Al-Saadi',
+      role: 'RISK_ANALYST',
+      mfaEnabled: false,
+    },
+  });
+
+  const complianceOfficer = await prisma.user.create({
+    data: {
+      email: 'compliance@tbibank.com',
+      password: hashedPassword,
+      name: 'Robert Martinez',
+      role: 'COMPLIANCE_OFFICER',
+      mfaEnabled: false,
+    },
+  });
+
+  const viewer = await prisma.user.create({
+    data: {
+      email: 'viewer@tbibank.com',
+      password: hashedPassword,
+      name: 'John Viewer',
+      role: 'VIEWER',
+      mfaEnabled: false,
+    },
+  });
+
+  console.log(`✅ Created ${8} users\n`);
+
+  // ==================== CREATE RISK CONFIGURATION ====================
   console.log('⚙️  Creating risk configuration...');
+
   const riskConfig = await prisma.riskConfiguration.create({
     data: {
-      version: '1.0.0',
-      name: 'TBi Bank Standard Risk Model',
-      description: 'Default risk assessment model for general business loans',
+      version: 'v1.0',
+      name: 'Standard Risk Model 2025',
+      description: 'Production risk assessment model with balanced factor weights',
       isActive: true,
-      
-      // Weights (must sum to 100)
       weightCreditHistory: 30,
       weightIncomeStability: 25,
       weightEmployment: 15,
       weightCollateral: 15,
       weightMarketConditions: 5,
       weightDebtToIncomeRatio: 10,
-      
-      // Thresholds
       thresholdLowRisk: 30,
       thresholdMediumRisk: 50,
       thresholdHighRisk: 70,
-      
-      // Auto-decision thresholds
-      autoApproveThreshold: 25,
-      autoRejectThreshold: 75,
-      
-      // Business Rules
-      businessRules: [
-        {
-          id: 'rule-1',
-          name: 'High Credit Score Auto-Approve',
-          condition: 'creditScore >= 750 && debtToIncomeRatio <= 30',
-          action: 'AUTO_APPROVE',
-          priority: 1
-        },
-        {
-          id: 'rule-2',
-          name: 'Default History Auto-Review',
-          condition: 'previousDefaults > 0',
-          action: 'REQUIRE_REVIEW',
-          priority: 2
-        }
-      ],
-      
-      // Compliance
+      autoApproveThreshold: 75,
+      autoRejectThreshold: 30,
+      businessRules: [],
       requireHumanReview: true,
       auditAllDecisions: true,
       retentionPeriodMonths: 84,
       explainabilityRequired: true,
       fairnessMonitoring: false,
-      
-      createdBy: admin.id
-    }
+      createdBy: admin.id,
+    },
   });
 
   console.log(`✅ Created risk configuration: ${riskConfig.version}\n`);
 
-  // Create Applicants and Applications
-  console.log('📋 Creating sample loan applications...\n');
+  // ==================== CREATE APPLICANTS & APPLICATIONS ====================
+  console.log('📝 Creating loan applications...');
 
-  // Application 1: Low Risk - Tech Training Business
+  // Application 1: High quality, likely to be approved
   const applicant1 = await prisma.applicant.create({
     data: {
-      firstName: 'Ahmed',
-      lastName: 'Al-Rashid',
-      middleName: 'Mohammed',
-      dateOfBirth: new Date('1985-03-15'),
-      nationalId: '19850315001',
+      firstName: 'John',
+      lastName: 'Doe',
+      middleName: 'Michael',
+      dateOfBirth: new Date('1985-05-15'),
+      nationalId: 'IQ-1234567890',
       nationality: 'Iraqi',
       maritalStatus: 'MARRIED',
       dependents: 2,
-      
       primaryPhone: '+964-770-123-4567',
-      email: 'ahmed.rashid@example.com',
-      
-      street: 'Al-Mansour District, Building 42',
+      secondaryPhone: '+964-780-123-4567',
+      email: 'john.doe@email.com',
+      street: '123 Al-Rasheed Street',
       city: 'Baghdad',
       state: 'Baghdad',
       postalCode: '10001',
       country: 'Iraq',
       residencyType: 'OWN',
-      yearsAtAddress: 8,
-      
-      annualIncome: 102000,
-      monthlyIncome: 8500,
-      otherIncome: 0,
-      monthlyExpenses: 6200,
-      debtToIncomeRatio: 28.5,
-      netWorth: 85000,
-      
-      employmentType: 'SELF_EMPLOYED',
-      employerName: 'Tech Training Center Baghdad',
-      jobTitle: 'Owner & CEO',
+      yearsAtAddress: 5,
+      annualIncome: 72000,
+      monthlyIncome: 6000,
+      otherIncome: 500,
+      monthlyExpenses: 2000,
+      debtToIncomeRatio: 0.30,
+      netWorth: 150000,
+      employmentType: 'FULL_TIME',
+      employerName: 'Tech Solutions Iraq',
+      jobTitle: 'Senior Software Engineer',
       yearsEmployed: 5,
-      yearsInIndustry: 8,
+      yearsInIndustry: 10,
       employerAddress: 'Karrada District, Baghdad',
-      
-      creditScore: 720,
-      creditScoreDate: new Date('2025-09-15'),
+      creditScore: 750,
+      creditScoreDate: new Date('2025-09-01'),
       creditBureau: 'EXPERIAN',
       previousDefaults: 0,
-      
-      piiEncrypted: false
-    }
+    },
   });
 
-  const application1 = await prisma.loanApplication.create({
+  const app1 = await prisma.loanApplication.create({
     data: {
-      applicationNumber: 'TBI-2025-001',
-      status: 'UNDER_REVIEW',
-      loanAmount: 50000,
-      loanPurpose: 'BUSINESS',
-      requestedTerm: 36,
-      interestRate: 8.5,
-      
+      applicationNumber: `LA-2025-000001`,
+      status: 'SUBMITTED',
       applicantId: applicant1.id,
-      
-      collateralValue: 35000,
-      collateralType: 'EQUIPMENT',
-      collateralDescription: 'Computer equipment and training materials valued at $35,000',
-      
-      assignedToId: loanOfficer.id,
-      priority: 'MEDIUM',
-      
-      currentRiskScore: 32.5,
-      currentRiskLevel: 'MEDIUM',
-      
-      submittedAt: new Date('2025-09-28'),
-      
+      loanAmount: 50000,
+      loanPurpose: 'HOME_PURCHASE',
+      requestedTerm: 240,
+      interestRate: 5.5,
+      collateralValue: 80000,
+      collateralType: 'REAL_ESTATE',
+      collateralDescription: 'Residential property in Al-Mansour, Baghdad',
+      assignedToId: loanOfficer1.id,
+      priority: 'HIGH',
       configVersion: riskConfig.version,
       consentGiven: true,
-      consentDate: new Date('2025-09-28')
-    }
+      consentDate: new Date(),
+      submittedAt: new Date(),
+    },
   });
 
-  console.log(`✅ Application 1: ${application1.applicationNumber} (Low-Medium Risk)\n`);
-
-  // Application 2: High Risk - Restaurant Startup
+  // Application 2: Medium risk
   const applicant2 = await prisma.applicant.create({
     data: {
-      firstName: 'Layla',
-      lastName: 'Ibrahim',
-      dateOfBirth: new Date('1990-07-22'),
-      nationalId: '19900722002',
+      firstName: 'Amira',
+      lastName: 'Al-Hassan',
+      dateOfBirth: new Date('1990-08-20'),
+      nationalId: 'IQ-2345678901',
       nationality: 'Iraqi',
       maritalStatus: 'SINGLE',
       dependents: 0,
-      
-      primaryPhone: '+964-750-234-5678',
-      email: 'layla.ibrahim@example.com',
-      
-      street: 'Erbil City Center, Apt 15',
-      city: 'Erbil',
-      state: 'Kurdistan',
-      postalCode: '44001',
+      primaryPhone: '+964-770-234-5678',
+      email: 'amira.hassan@email.com',
+      street: '456 Kadhimiya Road',
+      city: 'Baghdad',
+      state: 'Baghdad',
+      postalCode: '10002',
       country: 'Iraq',
       residencyType: 'RENT',
       yearsAtAddress: 2,
-      
-      annualIncome: 48000,
-      monthlyIncome: 4000,
-      otherIncome: 500,
-      monthlyExpenses: 3200,
-      debtToIncomeRatio: 42.0,
-      netWorth: 12000,
-      
+      annualIncome: 36000,
+      monthlyIncome: 3000,
+      otherIncome: 0,
+      monthlyExpenses: 1500,
+      debtToIncomeRatio: 0.40,
+      netWorth: 25000,
       employmentType: 'FULL_TIME',
-      employerName: 'Hotel Erbil International',
-      jobTitle: 'Restaurant Manager',
-      yearsEmployed: 3,
-      yearsInIndustry: 6,
-      
-      creditScore: 650,
-      creditScoreDate: new Date('2025-08-20'),
+      employerName: 'Baghdad Medical Center',
+      jobTitle: 'Nurse',
+      yearsEmployed: 2,
+      yearsInIndustry: 3,
+      employerAddress: 'Medical City, Baghdad',
+      creditScore: 680,
+      creditScoreDate: new Date('2025-08-15'),
       creditBureau: 'EQUIFAX',
-      previousDefaults: 1,
-      
-      piiEncrypted: false
-    }
+      previousDefaults: 0,
+    },
   });
 
-  const application2 = await prisma.loanApplication.create({
+  const app2 = await prisma.loanApplication.create({
     data: {
-      applicationNumber: 'TBI-2025-002',
-      status: 'RISK_ASSESSMENT',
-      loanAmount: 75000,
-      loanPurpose: 'BUSINESS',
-      requestedTerm: 60,
-      
+      applicationNumber: `LA-2025-000002`,
+      status: 'UNDER_REVIEW',
       applicantId: applicant2.id,
-      
-      collateralValue: 30000,
-      collateralType: 'EQUIPMENT',
-      collateralDescription: 'Kitchen equipment and furniture',
-      
-      assignedToId: loanOfficer.id,
-      priority: 'HIGH',
-      
-      currentRiskScore: 62.0,
-      currentRiskLevel: 'HIGH',
-      
-      submittedAt: new Date('2025-09-30'),
-      
+      loanAmount: 15000,
+      loanPurpose: 'VEHICLE',
+      requestedTerm: 60,
+      interestRate: 7.0,
+      collateralValue: 18000,
+      collateralType: 'VEHICLE',
+      collateralDescription: '2023 Toyota Corolla',
+      assignedToId: loanOfficer2.id,
+      priority: 'MEDIUM',
       configVersion: riskConfig.version,
       consentGiven: true,
-      consentDate: new Date('2025-09-30')
-    }
+      consentDate: new Date(),
+      submittedAt: new Date(),
+    },
   });
 
-  console.log(`✅ Application 2: ${application2.applicationNumber} (High Risk)\n`);
-
-  // Application 3: Very Low Risk - Home Improvement
+  // Application 3: Higher risk - self-employed with lower credit score
   const applicant3 = await prisma.applicant.create({
     data: {
       firstName: 'Omar',
-      lastName: 'Al-Bayati',
-      middleName: 'Tariq',
-      dateOfBirth: new Date('1978-11-08'),
-      nationalId: '19781108003',
+      lastName: 'Al-Maliki',
+      dateOfBirth: new Date('1982-03-10'),
+      nationalId: 'IQ-3456789012',
       nationality: 'Iraqi',
       maritalStatus: 'MARRIED',
       dependents: 3,
-      
-      primaryPhone: '+964-780-345-6789',
-      email: 'omar.bayati@example.com',
-      
-      street: 'Basra City, Al-Jumhuriya Street 88',
-      city: 'Basra',
-      state: 'Basra',
-      postalCode: '61001',
+      primaryPhone: '+964-770-345-6789',
+      email: 'omar.maliki@email.com',
+      street: '789 Sadr City Avenue',
+      city: 'Baghdad',
+      state: 'Baghdad',
+      postalCode: '10003',
       country: 'Iraq',
-      residencyType: 'OWN',
-      yearsAtAddress: 15,
-      
-      annualIncome: 156000,
-      monthlyIncome: 13000,
-      otherIncome: 2000,
-      monthlyExpenses: 7500,
-      debtToIncomeRatio: 18.0,
-      netWorth: 320000,
-      
-      employmentType: 'FULL_TIME',
-      employerName: 'Basra Oil Company',
-      jobTitle: 'Senior Engineer',
-      yearsEmployed: 12,
-      yearsInIndustry: 18,
-      
-      creditScore: 785,
-      creditScoreDate: new Date('2025-09-25'),
-      creditBureau: 'EXPERIAN',
-      previousDefaults: 0,
-      
-      piiEncrypted: false
-    }
+      residencyType: 'FAMILY',
+      yearsAtAddress: 1,
+      annualIncome: 48000,
+      monthlyIncome: 4000,
+      otherIncome: 1000,
+      monthlyExpenses: 2500,
+      debtToIncomeRatio: 0.50,
+      netWorth: 35000,
+      employmentType: 'SELF_EMPLOYED',
+      employerName: 'Al-Maliki Trading Company',
+      jobTitle: 'Business Owner',
+      yearsEmployed: 8,
+      yearsInIndustry: 8,
+      creditScore: 620,
+      creditScoreDate: new Date('2025-07-20'),
+      creditBureau: 'TRANSUNION',
+      previousDefaults: 1,
+    },
   });
 
-  const application3 = await prisma.loanApplication.create({
+  const app3 = await prisma.loanApplication.create({
     data: {
-      applicationNumber: 'TBI-2025-003',
-      status: 'APPROVED',
-      loanAmount: 30000,
-      loanPurpose: 'HOME_IMPROVEMENT',
-      requestedTerm: 24,
-      interestRate: 6.5,
-      
+      applicationNumber: `LA-2025-000003`,
+      status: 'RISK_ASSESSMENT',
       applicantId: applicant3.id,
-      
-      collateralValue: 250000,
-      collateralType: 'REAL_ESTATE',
-      collateralDescription: 'Residential property in Basra',
-      
-      assignedToId: loanOfficer.id,
-      priority: 'LOW',
-      
-      currentRiskScore: 18.5,
-      currentRiskLevel: 'LOW',
-      
-      submittedAt: new Date('2025-09-25'),
-      reviewedAt: new Date('2025-09-27'),
-      
+      loanAmount: 30000,
+      loanPurpose: 'BUSINESS',
+      requestedTerm: 120,
+      interestRate: 8.5,
+      collateralValue: 25000,
+      collateralType: 'EQUIPMENT',
+      collateralDescription: 'Commercial equipment and inventory',
+      assignedToId: underwriter.id,
+      priority: 'MEDIUM',
       configVersion: riskConfig.version,
       consentGiven: true,
-      consentDate: new Date('2025-09-25')
-    }
+      consentDate: new Date(),
+      submittedAt: new Date(),
+    },
   });
 
-  console.log(`✅ Application 3: ${application3.applicationNumber} (Low Risk - Approved)\n`);
-
-  // Create initial audit logs
-  console.log('📝 Creating audit logs...');
-  await prisma.auditLog.createMany({
-    data: [
-      {
-        userId: admin.id,
-        userEmail: admin.email,
-        action: 'CREATE',
-        entityType: 'RiskConfiguration',
-        entityId: riskConfig.id,
-        changes: { version: riskConfig.version },
-        ipAddress: '127.0.0.1',
-        userAgent: 'System/Seed',
-        sessionId: 'seed-session',
-        riskLevel: 'LOW',
-        complianceFlags: ['SYSTEM_INIT']
-      },
-      {
-        userId: loanOfficer.id,
-        userEmail: loanOfficer.email,
-        action: 'CREATE',
-        entityType: 'LoanApplication',
-        entityId: application1.id,
-        applicationId: application1.id,
-        ipAddress: '192.168.1.100',
-        userAgent: 'Mozilla/5.0',
-        sessionId: 'session-1',
-        riskLevel: 'LOW'
-      },
-      {
-        userId: loanOfficer.id,
-        userEmail: loanOfficer.email,
-        action: 'CREATE',
-        entityType: 'LoanApplication',
-        entityId: application2.id,
-        applicationId: application2.id,
-        ipAddress: '192.168.1.100',
-        userAgent: 'Mozilla/5.0',
-        sessionId: 'session-2',
-        riskLevel: 'LOW'
-      },
-      {
-        userId: loanOfficer.id,
-        userEmail: loanOfficer.email,
-        action: 'CREATE',
-        entityType: 'LoanApplication',
-        entityId: application3.id,
-        applicationId: application3.id,
-        ipAddress: '192.168.1.100',
-        userAgent: 'Mozilla/5.0',
-        sessionId: 'session-3',
-        riskLevel: 'LOW'
-      },
-      {
-        userId: loanOfficer.id,
-        userEmail: loanOfficer.email,
-        action: 'APPROVE',
-        entityType: 'LoanApplication',
-        entityId: application3.id,
-        applicationId: application3.id,
-        ipAddress: '192.168.1.100',
-        userAgent: 'Mozilla/5.0',
-        sessionId: 'session-4',
-        riskLevel: 'LOW',
-        complianceFlags: ['APPROVED']
-      }
-    ]
+  // Application 4: Excellent candidate
+  const applicant4 = await prisma.applicant.create({
+    data: {
+      firstName: 'Zainab',
+      lastName: 'Al-Kubaisi',
+      dateOfBirth: new Date('1988-11-25'),
+      nationalId: 'IQ-4567890123',
+      nationality: 'Iraqi',
+      maritalStatus: 'MARRIED',
+      dependents: 1,
+      primaryPhone: '+964-770-456-7890',
+      email: 'zainab.kubaisi@email.com',
+      street: '321 Adhamiyah Street',
+      city: 'Baghdad',
+      state: 'Baghdad',
+      postalCode: '10004',
+      country: 'Iraq',
+      residencyType: 'OWN',
+      yearsAtAddress: 7,
+      annualIncome: 96000,
+      monthlyIncome: 8000,
+      otherIncome: 2000,
+      monthlyExpenses: 2500,
+      debtToIncomeRatio: 0.25,
+      netWorth: 200000,
+      employmentType: 'FULL_TIME',
+      employerName: 'University of Baghdad',
+      jobTitle: 'Associate Professor',
+      yearsEmployed: 7,
+      yearsInIndustry: 12,
+      creditScore: 780,
+      creditScoreDate: new Date('2025-09-10'),
+      creditBureau: 'EXPERIAN',
+      previousDefaults: 0,
+    },
   });
 
-  console.log('✅ Created audit logs\n');
+  const app4 = await prisma.loanApplication.create({
+    data: {
+      applicationNumber: `LA-2025-000004`,
+      status: 'SUBMITTED',
+      applicantId: applicant4.id,
+      loanAmount: 75000,
+      loanPurpose: 'HOME_REFINANCE',
+      requestedTerm: 300,
+      interestRate: 4.5,
+      collateralValue: 120000,
+      collateralType: 'REAL_ESTATE',
+      collateralDescription: 'Primary residence in Jadriya, Baghdad',
+      assignedToId: loanOfficer1.id,
+      priority: 'HIGH',
+      configVersion: riskConfig.version,
+      consentGiven: true,
+      consentDate: new Date(),
+      submittedAt: new Date(),
+    },
+  });
 
-  console.log('✨ Seed complete!\n');
-  console.log('📊 Summary:');
-  console.log(`   - Users: 2`);
-  console.log(`   - Risk Configurations: 1`);
-  console.log(`   - Applicants: 3`);
-  console.log(`   - Loan Applications: 3`);
-  console.log(`   - Audit Logs: 5\n`);
-  
-  console.log('🔐 Login Credentials:');
-  console.log(`   Admin:        admin@tbibank.com / demo123`);
-  console.log(`   Loan Officer: officer@tbibank.com / demo123\n`);
+  // Application 5: Draft application
+  const applicant5 = await prisma.applicant.create({
+    data: {
+      firstName: 'Hassan',
+      lastName: 'Al-Baghdadi',
+      dateOfBirth: new Date('1995-06-30'),
+      nationalId: 'IQ-5678901234',
+      nationality: 'Iraqi',
+      maritalStatus: 'SINGLE',
+      dependents: 0,
+      primaryPhone: '+964-770-567-8901',
+      email: 'hassan.baghdadi@email.com',
+      street: '654 Dora District',
+      city: 'Baghdad',
+      state: 'Baghdad',
+      postalCode: '10005',
+      country: 'Iraq',
+      residencyType: 'RENT',
+      yearsAtAddress: 1,
+      annualIncome: 24000,
+      monthlyIncome: 2000,
+      otherIncome: 0,
+      monthlyExpenses: 1000,
+      debtToIncomeRatio: 0.35,
+      netWorth: 5000,
+      employmentType: 'FULL_TIME',
+      employerName: 'Al-Rasheed Bank',
+      jobTitle: 'Junior Teller',
+      yearsEmployed: 1,
+      yearsInIndustry: 1,
+      creditScore: 640,
+      creditScoreDate: new Date('2025-08-01'),
+      creditBureau: 'EQUIFAX',
+      previousDefaults: 0,
+    },
+  });
+
+  const app5 = await prisma.loanApplication.create({
+    data: {
+      applicationNumber: `LA-2025-000005`,
+      status: 'DRAFT',
+      applicantId: applicant5.id,
+      loanAmount: 10000,
+      loanPurpose: 'PERSONAL',
+      requestedTerm: 36,
+      interestRate: 9.0,
+      assignedToId: loanOfficer2.id,
+      priority: 'LOW',
+      configVersion: riskConfig.version,
+      consentGiven: false,
+    },
+  });
+
+  console.log(`✅ Created ${5} loan applications with applicants\n`);
+
+  // ==================== SUMMARY ====================
+  console.log('📊 Seed Summary:');
+  console.log('═══════════════════════════════════════════════════════');
+  console.log(`👥 Users: ${8}`);
+  console.log(`   - Admin: admin@tbibank.com`);
+  console.log(`   - Senior Underwriter: senior.underwriter@tbibank.com`);
+  console.log(`   - Loan Officers: loan.officer1@tbibank.com, loan.officer2@tbibank.com`);
+  console.log(`   - Underwriter: underwriter@tbibank.com`);
+  console.log(`   - Risk Analyst: risk.analyst@tbibank.com`);
+  console.log(`   - Compliance: compliance@tbibank.com`);
+  console.log(`   - Viewer: viewer@tbibank.com`);
+  console.log(`   🔑 Password for all users: Password123!`);
+  console.log();
+  console.log(`⚙️  Risk Configuration: ${riskConfig.version} (Active)`);
+  console.log();
+  console.log(`📝 Loan Applications: ${5}`);
+  console.log(`   - LA-2025-000001: John Doe - $50k HOME_PURCHASE (SUBMITTED)`);
+  console.log(`   - LA-2025-000002: Amira Al-Hassan - $15k VEHICLE (UNDER_REVIEW)`);
+  console.log(`   - LA-2025-000003: Omar Al-Maliki - $30k BUSINESS (RISK_ASSESSMENT)`);
+  console.log(`   - LA-2025-000004: Zainab Al-Kubaisi - $75k HOME_REFINANCE (SUBMITTED)`);
+  console.log(`   - LA-2025-000005: Hassan Al-Baghdadi - $10k PERSONAL (DRAFT)`);
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('\n✨ Database seeded successfully!\n');
+  console.log('🚀 Next steps:');
+  console.log('   1. Start the server: npm run dev');
+  console.log('   2. Login with any user email and password: Password123!');
+  console.log('   3. Test API at: http://localhost:3001/api/v1');
+  console.log('   4. View database: npm run db:studio\n');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed failed:', e);
+    console.error('❌ Error seeding database:', e);
     process.exit(1);
   })
   .finally(async () => {
