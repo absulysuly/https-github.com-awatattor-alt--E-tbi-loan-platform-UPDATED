@@ -1,0 +1,42 @@
+File,Path,Repository,LOC,Component Type,Dependencies,Reuse Decision,Refactor Notes,Effort Hours,Effort Size,Risk Level,Priority,PII Data,Security Impact
+geminiService.ts,/services/geminiService.ts,missinggold,120,AI Service,@google/generative-ai,Refactor,Adapt for loan risk assessment with financial scoring logic,8,Small,Medium,P0,No,Medium
+auth.ts,/src/lib/auth.ts,missinggold,85,Authentication,next-auth,As-is,Add MFA and banking security enhancements,2,Small,Low,P0,Yes,High
+adminService.ts,/services/adminService.ts,missinggold,200,Admin Logic,prisma,Refactor,Extract dashboard patterns for loan config,12,Medium,Medium,P0,No,Medium
+AdminDashboard.tsx,/components/AdminDashboard.tsx,missinggold,350,Dashboard UI,react tailwind,Refactor,Adapt for risk config and loan management,16,Medium,Medium,P1,No,Low
+AuthModal.tsx,/components/AuthModal.tsx,missinggold,180,Auth UI,react next-auth,As-is,Verify banking security compliance,4,Small,Low,P1,Yes,High
+AnalyticsDashboard.tsx,/components/AnalyticsDashboard.tsx,missinggold,420,Analytics,react recharts,Refactor,Risk metrics and loan performance visualization,20,Large,High,P1,Yes,Medium
+schema.prisma,/prisma/schema.prisma,missinggold,150,Database Schema,prisma,Replace,New loan-specific schema with audit trails,24,Large,High,P0,Yes,High
+middleware.ts,/middleware.ts,missinggold,60,Request Handling,next.js,Refactor,Route protection for banking endpoints,6,Small,Low,P0,No,High
+i18n.ts,/i18n.ts,missinggold,45,Internationalization,next-i18next,As-is,Multi-language support ready to use,1,Small,Low,P1,No,Low
+tailwind.config.js,/tailwind.config.js,missinggold,80,Styling Config,tailwindcss,As-is,Design system foundation,2,Small,Low,P2,No,Low
+emailService.ts,/services/emailService.ts,missinggold,95,Email Service,nodemailer,Refactor,Notifications for loan status updates,8,Small,Medium,P2,Yes,Medium
+integrationService.ts,/services/integrationService.ts,missinggold,140,Integration Service,axios,Refactor,External banking system integrations,16,Medium,High,P2,Yes,High
+ErrorBoundary.tsx,/components/ErrorBoundary.tsx,missinggold,75,Error Handling,react,As-is,Error boundaries for production stability,2,Small,Low,P2,No,Low
+SearchBar.tsx,/components/SearchBar.tsx,missinggold,120,Search UI,react,Refactor,Search loan applications and borrowers,8,Small,Medium,P2,Yes,Medium
+UserMenu.tsx,/components/UserMenu.tsx,missinggold,90,Navigation,react,As-is,User profile and logout functionality,4,Small,Low,P2,Yes,Low
+Pagination.tsx,/components/Pagination.tsx,missinggold,65,Navigation,react,As-is,Table pagination for loan lists,2,Small,Low,P3,No,Low
+LoadingScreen.tsx,/src/app/components/LoadingScreen.tsx,missinggold,40,Loading UI,react,As-is,Loading states for async operations,1,Small,Low,P3,No,Low
+PWAInstallPrompt.tsx,/src/app/components/PWAInstallPrompt.tsx,missinggold,85,PWA Feature,react,Skip,Not needed for banking platform,0,Skip,Low,P3,No,Low
+EventCard.tsx,/components/EventCard.tsx,missinggold,180,List Item,react,Replace,Create LoanApplicationCard component,12,Medium,Medium,P2,Yes,Medium
+EventDetailModal.tsx,/components/EventDetailModal.tsx,missinggold,250,Modal UI,react,Replace,Create LoanDetailModal with risk breakdown,16,Medium,Medium,P2,Yes,Medium
+EventGrid.tsx,/components/EventGrid.tsx,missinggold,120,Grid Layout,react,Replace,LoanApplicationGrid for dashboard views,8,Small,Medium,P2,Yes,Low
+FilterTags.tsx,/components/FilterTags.tsx,missinggold,70,Filter UI,react,Refactor,Risk category and status filters,6,Small,Low,P2,No,Low
+IntelligentSearchBar.tsx,/components/IntelligentSearchBar.tsx,missinggold,200,Smart Search,react ai,Refactor,AI-powered loan search and insights,16,Medium,High,P2,Yes,High
+LanguageSwitcher.tsx,/components/LanguageSwitcher.tsx,missinggold,55,Localization,react,As-is,Multi-language support for global bank,2,Small,Low,P2,No,Low
+NotificationSettings.tsx,/components/NotificationSettings.tsx,missinggold,110,Settings UI,react,Refactor,Loan status notification preferences,8,Small,Medium,P3,Yes,Medium
+PerformanceDashboard.tsx,/components/PerformanceDashboard.tsx,missinggold,300,Performance UI,react,Refactor,Risk model performance monitoring,20,Large,High,P2,No,Medium
+RealtimeAnalyticsDashboard.tsx,/components/RealtimeAnalyticsDashboard.tsx,missinggold,380,Realtime UI,react websocket,Refactor,Real-time loan processing metrics,24,Large,High,P2,Yes,High
+SecurityDashboard.tsx,/components/SecurityDashboard.tsx,missinggold,220,Security UI,react,As-is,Security monitoring for banking compliance,8,Small,High,P1,No,High
+SmartRecommendations.tsx,/components/SmartRecommendations.tsx,missinggold,160,AI UI,react,Refactor,Risk-based loan recommendations,12,Medium,Medium,P2,Yes,Medium
+UserProfileModal.tsx,/components/UserProfileModal.tsx,missinggold,190,Profile UI,react,Refactor,Bank employee profile management,10,Medium,Medium,P3,Yes,High
+api/auth/route.ts,/src/app/api/auth/[...nextauth]/route.ts,missinggold,100,API Route,next-auth,As-is,Authentication API with banking security,4,Small,High,P0,Yes,High
+api/events/route.ts,/src/app/api/events/route.ts,missinggold,150,API Route,next.js prisma,Replace,Loan application CRUD operations,16,Medium,High,P0,Yes,High
+api/upload/route.ts,/src/app/api/upload/route.ts,missinggold,80,API Route,next.js multer,Refactor,Document upload with OCR processing,12,Medium,Medium,P1,Yes,High
+api/health/route.ts,/src/app/api/health/route.ts,missinggold,30,Health Check,next.js,As-is,System health monitoring,1,Small,Low,P2,No,Low
+utils/pwa.ts,/src/app/utils/pwa.ts,missinggold,60,PWA Utils,workbox,Skip,Not applicable for banking platform,0,Skip,Low,P3,No,Low
+hooks/useTranslations.ts,/src/app/hooks/useTranslations.ts,missinggold,45,React Hook,react,As-is,Translation hook for multi-language,2,Small,Low,P2,No,Low
+hooks/usePerformance.ts,/src/app/hooks/usePerformance.ts,missinggold,70,React Hook,react,Refactor,Performance monitoring for risk engine,6,Small,Medium,P2,No,Medium
+lib/countries.ts,/src/lib/countries.ts,missinggold,120,Data Utils,none,As-is,Country data for international banking,2,Small,Low,P3,No,Low
+lib/geocode.ts,/src/lib/geocode.ts,missinggold,90,Location Utils,google-maps,Skip,Not needed for loan assessment,0,Skip,Low,P3,No,Low
+lib/i18n.ts,/src/lib/i18n.ts,missinggold,85,Localization,next-i18next,As-is,Internationalization configuration,2,Small,Low,P2,No,Low
+lib/ratelimit.ts,/src/lib/ratelimit.ts,missinggold,50,Rate Limiting,none,As-is,API rate limiting for security,2,Small,Medium,P1,No,High

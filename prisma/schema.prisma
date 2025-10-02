@@ -1,0 +1,484 @@
+// TBi Bank CSDR Loan Assessment Platform - Database Schema
+// Generated: 2025-10-02
+// Prisma ORM Schema for PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ====================== USER MANAGEMENT ======================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String   // Hashed with bcrypt
+  role      UserRole @default(VIEWER)
+  
+  // Security
+  mfaEnabled          Boolean   @default(false)
+  mfaSecret           String?   // Encrypted TOTP secret
+  failedLoginAttempts Int       @default(0)
+  accountLocked       Boolean   @default(false)
+  lockedUntil         DateTime?
+  lastLogin           DateTime?
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  
+  // Relations
+  assignedApplications LoanApplication[] @relation("AssignedOfficer")
+  assessments          RiskAssessment[]
+  auditLogs            AuditLog[]
+  createdConfigs       RiskConfiguration[]
+  
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  LOAN_OFFICER
+  SENIOR_UNDERWRITER
+  UNDERWRITER
+  RISK_ANALYST
+  COMPLIANCE_OFFICER
+  VIEWER
+}
+
+// ====================== LOAN APPLICATION ======================
+
+model LoanApplication {
+  id                String            @id @default(cuid())
+  applicationNumber String            @unique
+  status            ApplicationStatus @default(DRAFT)
+  
+  // Loan Details
+  loanAmount      Float
+  loanPurpose     LoanPurpose
+  requestedTerm   Int // months
+  interestRate    Float?
+  
+  // Applicant (embedded for simplicity, could be separate table)
+  applicantId String
+  applicant   Applicant @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  
+  // Collateral
+  collateralValue       Float?
+  collateralType        CollateralType?
+  collateralDescription String?
+  
+  // Assignment & Priority
+  assignedToId String?
+  assignedTo   User?   @relation("AssignedOfficer", fields: [assignedToId], references: [id])
+  priority     Priority @default(MEDIUM)
+  
+  // Current Risk Assessment
+  currentRiskScore  Float?
+  currentRiskLevel  RiskLevel?
+  
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  
+  // Compliance
+  configVersion  String
+  consentGiven   Boolean  @default(false)
+  consentDate    DateTime?
+  
+  // Relations
+  assessments RiskAssessment[]
+  documents   Document[]
+  auditLogs   AuditLog[]
+  
+  @@index([status])
+  @@index([assignedToId])
+  @@index([applicationNumber])
+  @@index([createdAt])
+  @@map("loan_applications")
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  PENDING_DOCUMENTS
+  RISK_ASSESSMENT
+  MANUAL_REVIEW
+  APPROVED
+  REJECTED
+  CANCELLED
+  DISBURSED
+}
+
+enum LoanPurpose {
+  HOME_PURCHASE
+  HOME_REFINANCE
+  HOME_IMPROVEMENT
+  BUSINESS
+  EDUCATION
+  VEHICLE
+  PERSONAL
+  DEBT_CONSOLIDATION
+}
+
+enum CollateralType {
+  REAL_ESTATE
+  VEHICLE
+  SECURITIES
+  CASH_DEPOSIT
+  EQUIPMENT
+  INVENTORY
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ====================== APPLICANT ======================
+
+model Applicant {
+  id String @id @default(cuid())
+  
+  // Personal Information (PII - should be encrypted)
+  firstName   String
+  lastName    String
+  middleName  String?
+  dateOfBirth DateTime
+  nationalId  String   @unique // Should be encrypted
+  nationality String
+  maritalStatus MaritalStatus
+  dependents    Int       @default(0)
+  
+  // Contact Information
+  primaryPhone   String
+  secondaryPhone String?
+  email          String
+  
+  // Address
+  street       String
+  city         String
+  state        String
+  postalCode   String
+  country      String  @default("Iraq")
+  residencyType ResidencyType
+  yearsAtAddress Int
+  
+  // Financial Information
+  annualIncome     Float
+  monthlyIncome    Float
+  otherIncome      Float?
+  monthlyExpenses  Float
+  debtToIncomeRatio Float
+  netWorth         Float
+  
+  // Employment
+  employmentType   EmploymentType
+  employerName     String
+  jobTitle         String
+  yearsEmployed    Float
+  yearsInIndustry  Float
+  employerAddress  String?
+  
+  // Credit History
+  creditScore        Int
+  creditScoreDate    DateTime
+  creditBureau       CreditBureau
+  previousDefaults   Int       @default(0)
+  
+  // PII Handling
+  piiEncrypted   Boolean  @default(false)
+  lastPiiUpdate  DateTime @default(now())
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  applications LoanApplication[]
+  
+  @@index([nationalId])
+  @@index([email])
+  @@map("applicants")
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+  SEPARATED
+}
+
+enum ResidencyType {
+  OWN
+  RENT
+  FAMILY
+  COMPANY
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  SELF_EMPLOYED
+  RETIRED
+  UNEMPLOYED
+}
+
+enum CreditBureau {
+  EXPERIAN
+  EQUIFAX
+  TRANSUNION
+}
+
+// ====================== RISK ASSESSMENT ======================
+
+model RiskAssessment {
+  id            String   @id @default(cuid())
+  applicationId String
+  application   LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  
+  officerId String
+  officer   User   @relation(fields: [officerId], references: [id])
+  
+  // Core Assessment
+  riskScore      Float // 0-100
+  riskCategory   RiskLevel
+  recommendation LoanRecommendation
+  confidence     Float // 0-100
+  
+  // Factor Scores (JSON for flexibility)
+  factorScores Json // { creditHistory: {...}, incomeStability: {...}, etc }
+  
+  // Key Indicators
+  keyRiskIndicators     String[] // Array of risk flags
+  mitigationSuggestions String[] // Array of mitigation suggestions
+  
+  // Multilingual Summary
+  summaryEn String
+  summaryAr String?
+  summaryKu String?
+  
+  // Explainability
+  explainabilityData Json // SHAP values, decision path, scenarios
+  
+  // Model Info
+  modelVersion String
+  configVersion String
+  
+  // Human Review
+  humanReviewRequired Boolean  @default(false)
+  reviewComments      String?
+  reviewedBy          String?
+  reviewedAt          DateTime?
+  
+  // Timestamps
+  timestamp DateTime @default(now())
+  
+  @@index([applicationId])
+  @@index([riskCategory])
+  @@index([timestamp])
+  @@map("risk_assessments")
+}
+
+enum LoanRecommendation {
+  APPROVE
+  REVIEW
+  REJECT
+}
+
+// ====================== RISK CONFIGURATION ======================
+
+model RiskConfiguration {
+  id          String   @id @default(cuid())
+  version     String   @unique
+  name        String
+  description String
+  isActive    Boolean  @default(false)
+  
+  // Weights (must sum to 100)
+  weightCreditHistory      Float
+  weightIncomeStability    Float
+  weightEmployment         Float
+  weightCollateral         Float
+  weightMarketConditions   Float
+  weightDebtToIncomeRatio  Float
+  
+  // Thresholds
+  thresholdLowRisk    Float // Below this = LOW
+  thresholdMediumRisk Float // Below this = MEDIUM
+  thresholdHighRisk   Float // Below this = HIGH, above = CRITICAL
+  
+  // Auto-decision thresholds
+  autoApproveThreshold Float
+  autoRejectThreshold  Float
+  
+  // Business Rules (JSON array)
+  businessRules Json // [{ id, name, condition, action, priority }]
+  
+  // Compliance Settings
+  requireHumanReview      Boolean @default(true)
+  auditAllDecisions       Boolean @default(true)
+  retentionPeriodMonths   Int     @default(84) // 7 years
+  explainabilityRequired  Boolean @default(true)
+  fairnessMonitoring      Boolean @default(false)
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  createdBy String
+  creator   User     @relation(fields: [createdBy], references: [id])
+  
+  @@index([version])
+  @@index([isActive])
+  @@map("risk_configurations")
+}
+
+// ====================== AUDIT LOG ======================
+
+model AuditLog {
+  id String @id @default(cuid())
+  
+  // User Info
+  userId    String
+  user      User   @relation(fields: [userId], references: [id])
+  userEmail String
+  
+  // Action Details
+  action     AuditAction
+  entityType String // "LoanApplication", "User", "RiskConfiguration", etc
+  entityId   String
+  
+  // Changes (JSON for flexibility)
+  changes        Json? // New values
+  previousValues Json? // Old values
+  
+  // Request Context
+  ipAddress  String
+  userAgent  String
+  sessionId  String
+  
+  // Risk Assessment
+  riskLevel       RiskLogLevel
+  complianceFlags String[] // Any compliance concerns
+  
+  // Relations (optional, for easy querying)
+  applicationId String?
+  application   LoanApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  
+  // Timestamp
+  timestamp DateTime @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([applicationId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  FAILED_LOGIN
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  OVERRIDE
+  CONFIG_CHANGE
+  EXPORT
+}
+
+enum RiskLogLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// ====================== DOCUMENT ======================
+
+model Document {
+  id            String   @id @default(cuid())
+  applicationId String
+  application   LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  
+  // File Information
+  fileName    String
+  fileType    String // MIME type
+  fileSize    Int // bytes
+  storagePath String // Path in storage system (S3, etc)
+  
+  // Classification
+  documentType DocumentType
+  category     DocumentCategory
+  
+  // OCR Processing
+  ocrProcessed Boolean  @default(false)
+  ocrData      Json? // OCR results
+  ocrConfidence Float?
+  
+  // Extracted Fields
+  extractedFields Json? // Structured data extracted from document
+  
+  // Security
+  encrypted   Boolean     @default(false)
+  accessLevel AccessLevel @default(INTERNAL)
+  
+  // Metadata
+  uploadedAt DateTime @default(now())
+  uploadedBy String
+  retentionDate DateTime? // When to delete/archive
+  
+  @@index([applicationId])
+  @@index([documentType])
+  @@index([uploadedAt])
+  @@map("documents")
+}
+
+enum DocumentType {
+  INCOME_VERIFICATION
+  EMPLOYMENT_VERIFICATION
+  BANK_STATEMENT
+  TAX_RETURN
+  IDENTITY_DOCUMENT
+  COLLATERAL_APPRAISAL
+  CREDIT_REPORT
+  BUSINESS_PLAN
+  OTHER
+}
+
+enum DocumentCategory {
+  REQUIRED
+  OPTIONAL
+  SUPPLEMENTARY
+}
+
+enum AccessLevel {
+  PUBLIC
+  INTERNAL
+  CONFIDENTIAL
+  RESTRICTED
+}

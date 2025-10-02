@@ -1,0 +1,654 @@
+{
+  "project": {
+    "name": "TBi Bank CSDR Loan Assessment Platform",
+    "description": "AI-powered loan risk assessment system adapted from Eventra event management platform",
+    "version": "1.0.0-MVP",
+    "repository": "E:\\tbi-loan-platform",
+    "sourceRepository": "E:\\MissingGold\\4phasteprompt-eventra",
+    "status": "Active Development",
+    "lastUpdated": "2025-10-02T07:48:00Z"
+  },
+  "deliverables": {
+    "mode": "Read-only",
+    "description": "Generate audit, patches, and new scaffold without modifying existing repos",
+    "permissions": {
+      "createBranches": false,
+      "modifyMain": false,
+      "createPRs": false,
+      "newScaffold": true
+    }
+  },
+  "executiveSummary": {
+    "reusePercentage": 60,
+    "mvpTimeline": {
+      "weeks": "6-8",
+      "startDate": "2025-10-01",
+      "targetCompletion": "2025-11-22"
+    },
+    "topReusePicks": [
+      "AI Service Architecture (Gemini integration)",
+      "Authentication & Authorization (NextAuth)",
+      "TypeScript Data Models",
+      "Admin Dashboard Components",
+      "Internationalization Framework (AR/EN/KU)",
+      "Database Layer (Prisma ORM)"
+    ],
+    "keyAdaptations": [
+      "Event suggestions → Loan risk assessment",
+      "Content moderation → Document validation",
+      "User management → Applicant/Officer management",
+      "Neon UI theme → Professional banking theme",
+      "Event analytics → Risk score analytics"
+    ]
+  },
+  "p0Priorities": [
+    {
+      "id": "P0-1",
+      "name": "Risk Assessment Service",
+      "source": "services/geminiService.ts",
+      "target": "backend/src/services/riskAssessmentService.ts",
+      "effort": {
+        "min": 6,
+        "max": 10,
+        "unit": "hours"
+      },
+      "status": "Patch Created",
+      "patchFile": "patches/p0_risk_assessment_service.patch",
+      "testFile": "tests/unit/riskEngine.test.ts",
+      "dependencies": ["@google/generative-ai", "loan-types.ts"]
+    },
+    {
+      "id": "P0-2",
+      "name": "Authentication Enhancement",
+      "source": "eventra-saas/src/lib/auth.ts",
+      "target": "backend/src/lib/auth.ts",
+      "effort": {
+        "min": 8,
+        "max": 12,
+        "unit": "hours"
+      },
+      "status": "Patch Created",
+      "patchFile": "patches/p0_auth_banking_enhancement.patch",
+      "testFile": "tests/unit/auth.test.ts",
+      "dependencies": ["next-auth", "prisma", "bcryptjs"]
+    },
+    {
+      "id": "P0-3",
+      "name": "Loan Application Data Model",
+      "source": "types.ts",
+      "target": "src/types/loan-types.ts",
+      "effort": {
+        "min": 8,
+        "max": 12,
+        "unit": "hours"
+      },
+      "status": "Completed",
+      "loc": 677,
+      "dependencies": []
+    },
+    {
+      "id": "P0-4",
+      "name": "Admin Service Adaptation",
+      "source": "services/adminService.ts",
+      "target": "backend/src/services/loanConfigService.ts",
+      "effort": {
+        "min": 10,
+        "max": 16,
+        "unit": "hours"
+      },
+      "status": "Pending",
+      "dependencies": ["prisma", "auditLogger"]
+    },
+    {
+      "id": "P0-5",
+      "name": "Audit Logging Service",
+      "source": "NEW",
+      "target": "backend/src/services/auditLogger.ts",
+      "effort": {
+        "min": 6,
+        "max": 10,
+        "unit": "hours"
+      },
+      "status": "Pending",
+      "dependencies": ["prisma"]
+    },
+    {
+      "id": "P0-6",
+      "name": "Prisma Database Schema",
+      "source": "eventra-saas/prisma/schema.prisma",
+      "target": "prisma/schema.prisma",
+      "effort": {
+        "min": 20,
+        "max": 32,
+        "unit": "hours"
+      },
+      "status": "Pending",
+      "dependencies": ["@prisma/client"]
+    }
+  ],
+  "mvpFeatures": {
+    "authentication": {
+      "features": [
+        "JWT-based session management",
+        "Role-based access control (7 roles)",
+        "Failed login tracking (5 attempts = lock)",
+        "30-minute session timeout",
+        "MFA support infrastructure",
+        "Audit logging for all auth events"
+      ],
+      "roles": [
+        "admin",
+        "loan_officer",
+        "senior_underwriter",
+        "underwriter",
+        "risk_analyst",
+        "compliance_officer",
+        "viewer"
+      ]
+    },
+    "coreDomain": {
+      "entities": [
+        "LoanApplication",
+        "Applicant",
+        "RiskAssessment",
+        "RiskConfiguration",
+        "AuditLog",
+        "Document",
+        "User"
+      ],
+      "relationships": {
+        "LoanApplication": ["Applicant", "RiskAssessment[]", "Document[]", "AuditLog[]"],
+        "RiskAssessment": ["LoanApplication", "RiskConfiguration", "User (officer)"],
+        "AuditLog": ["User", "LoanApplication"]
+      }
+    },
+    "riskEngine": {
+      "inputs": [
+        "Credit history",
+        "Income stability",
+        "Employment history",
+        "Collateral value",
+        "Market conditions",
+        "Debt-to-income ratio"
+      ],
+      "outputs": {
+        "riskScore": "0-100 scale",
+        "riskCategory": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+        "recommendation": ["APPROVE", "REVIEW", "REJECT"],
+        "confidence": "0-100%",
+        "explainability": "Factor contributions with SHAP values"
+      },
+      "configurable": {
+        "weights": "Per-factor percentage weights (must sum to 100%)",
+        "thresholds": "Risk category boundaries",
+        "businessRules": "Conditional logic for auto-approval/rejection"
+      }
+    },
+    "adminUI": {
+      "components": [
+        "Risk Configuration Editor",
+        "Decision Board (Kanban)",
+        "Explainability Panel",
+        "Application Dashboard",
+        "Document Uploader",
+        "Audit Log Viewer"
+      ]
+    },
+    "explainability": {
+      "visualizations": [
+        "Waterfall chart (factor contributions)",
+        "SHAP value bar chart",
+        "Feature importance ranking",
+        "Alternative scenario comparisons"
+      ],
+      "narrative": "Multi-language summary linking to source documents"
+    },
+    "decisionBoard": {
+      "columns": [
+        "Pending Review",
+        "Under Assessment",
+        "Approved",
+        "Rejected",
+        "Conditional"
+      ],
+      "features": [
+        "Drag-and-drop interface",
+        "Manual override with reason",
+        "Audit trail for all moves",
+        "Filtering by risk level/amount"
+      ]
+    }
+  },
+  "productionV1Additions": {
+    "security": [
+      "Field-level PII encryption",
+      "Default-deny security rules",
+      "IP-based access restrictions",
+      "Rate limiting per endpoint",
+      "Security headers (HSTS, CSP)",
+      "Regular security audits"
+    ],
+    "cicd": [
+      "GitHub Actions workflows",
+      "Automated testing (unit/integration/e2e)",
+      "Staged deployments (dev/staging/prod)",
+      "Automated database migrations",
+      "Rollback procedures",
+      "Health check endpoints"
+    ],
+    "observability": [
+      "Structured logging (Winston/Pino)",
+      "Error tracking (Sentry)",
+      "Performance monitoring (New Relic/DataDog)",
+      "Custom metrics dashboards",
+      "Alert rules for critical events"
+    ],
+    "compliance": [
+      "Data retention policies",
+      "PII access audit logs",
+      "GDPR/data protection compliance",
+      "Regulatory reporting exports",
+      "Immutable audit trails"
+    ]
+  },
+  "v2Features": {
+    "optional": [
+      {
+        "name": "Historical Model Benchmarking",
+        "description": "Track risk model accuracy over time with actual loan outcomes",
+        "effort": "40-60 hours"
+      },
+      {
+        "name": "Fairness Reporting",
+        "description": "Detect and report on potential bias in risk assessments",
+        "effort": "60-80 hours"
+      },
+      {
+        "name": "Advanced OCR Integration",
+        "description": "Real OCR processing with Google Vision/AWS Textract",
+        "effort": "30-50 hours"
+      },
+      {
+        "name": "ML Model Monitoring",
+        "description": "Data drift detection and model performance alerts",
+        "effort": "50-70 hours"
+      },
+      {
+        "name": "Multi-Product Analytics",
+        "description": "Portfolio-wide analytics across loan products",
+        "effort": "40-60 hours"
+      }
+    ]
+  },
+  "fileMapping": {
+    "totalFilesAnalyzed": 50,
+    "reuseCategories": {
+      "asIs": 12,
+      "refactor": 18,
+      "replace": 3,
+      "skip": 5,
+      "new": 12
+    },
+    "csvExport": "FILE_MAPPING_DETAILED.csv",
+    "effortSummary": {
+      "p0": {
+        "min": 58,
+        "max": 92,
+        "unit": "hours"
+      },
+      "p1": {
+        "min": 86,
+        "max": 150,
+        "unit": "hours"
+      },
+      "total": {
+        "min": 200,
+        "max": 350,
+        "unit": "hours"
+      }
+    }
+  },
+  "testing": {
+    "unit": {
+      "coverage": "90%+",
+      "framework": "Jest",
+      "priority": "Risk engine, auth, business logic",
+      "estimatedTests": 150
+    },
+    "integration": {
+      "coverage": "80%+",
+      "framework": "Jest + Supertest",
+      "priority": "API endpoints, database operations",
+      "estimatedTests": 80
+    },
+    "e2e": {
+      "coverage": "Critical paths",
+      "framework": "Playwright",
+      "scenarios": [
+        "Login and create application",
+        "Generate risk assessment",
+        "Manual override with audit",
+        "Config change and versioning",
+        "Document upload flow"
+      ],
+      "estimatedTests": 20
+    }
+  },
+  "security": {
+    "piiLocations": [
+      {
+        "entity": "Applicant",
+        "fields": ["firstName", "lastName", "nationalId", "dateOfBirth", "address", "phone", "email"],
+        "handling": "Field-level encryption recommended"
+      },
+      {
+        "entity": "Document",
+        "fields": ["content", "ocrData"],
+        "handling": "Encrypted at rest, access logged"
+      },
+      {
+        "entity": "AuditLog",
+        "fields": ["ipAddress", "userAgent"],
+        "handling": "Retained per compliance policy, no encryption needed"
+      }
+    ],
+    "complianceChecklist": [
+      {
+        "requirement": "Audit all manual overrides",
+        "status": "Implemented",
+        "location": "AuditLog service"
+      },
+      {
+        "requirement": "ConfigVersion on assessments",
+        "status": "Implemented",
+        "location": "RiskAssessment type"
+      },
+      {
+        "requirement": "Immutable audit logs",
+        "status": "Pending",
+        "implementation": "Database constraints + append-only API"
+      },
+      {
+        "requirement": "PII encryption",
+        "status": "Pending",
+        "implementation": "Prisma middleware for field-level encryption"
+      },
+      {
+        "requirement": "Data retention policies",
+        "status": "Pending",
+        "implementation": "Scheduled jobs for data archival/deletion"
+      }
+    ]
+  },
+  "deployment": {
+    "providers": [
+      {
+        "name": "Vercel",
+        "pros": ["Easy Next.js deployment", "Automatic HTTPS", "Edge functions"],
+        "cons": ["Database hosting separate", "Limited backend customization"],
+        "recommended": "MVP"
+      },
+      {
+        "name": "AWS",
+        "pros": ["Full control", "Scalable", "Compliance certifications"],
+        "cons": ["Complex setup", "Higher cost", "More maintenance"],
+        "recommended": "V1 Production"
+      },
+      {
+        "name": "GCP",
+        "pros": ["Good AI/ML integration", "Cloud Run for containers", "Competitive pricing"],
+        "cons": ["Learning curve", "Less mature than AWS"],
+        "recommended": "V1 Production (Alternative)"
+      },
+      {
+        "name": "Docker + Self-hosted",
+        "pros": ["Full control", "Data sovereignty", "Cost-effective at scale"],
+        "cons": ["Requires DevOps expertise", "Infrastructure management"],
+        "recommended": "V1 Production (On-prem)"
+      }
+    ],
+    "recommendedStack": {
+      "mvp": {
+        "frontend": "Vercel",
+        "backend": "Vercel Serverless Functions",
+        "database": "Supabase (PostgreSQL)",
+        "storage": "Vercel Blob",
+        "rationale": "Fastest time to deployment, minimal DevOps"
+      },
+      "production": {
+        "frontend": "AWS S3 + CloudFront",
+        "backend": "AWS ECS (Fargate) or EKS",
+        "database": "AWS RDS (PostgreSQL Multi-AZ)",
+        "storage": "AWS S3",
+        "rationale": "Enterprise-grade, scalable, compliance-ready"
+      }
+    }
+  },
+  "branchingStrategy": {
+    "branches": [
+      {
+        "name": "main",
+        "description": "Production-ready code only",
+        "protections": ["Require PR approval", "CI must pass", "No direct pushes"]
+      },
+      {
+        "name": "develop",
+        "description": "Integration branch for features",
+        "protections": ["CI must pass"]
+      },
+      {
+        "name": "reuse/tbi-audit",
+        "description": "Initial audit and file mapping",
+        "status": "Completed"
+      },
+      {
+        "name": "reuse/tbi-p0",
+        "description": "P0 priority implementations",
+        "status": "In Progress"
+      },
+      {
+        "name": "reuse/tbi-mvp",
+        "description": "Complete MVP implementation",
+        "status": "Pending"
+      },
+      {
+        "name": "release/v1.0",
+        "description": "Production V1 release candidate",
+        "status": "Pending"
+      }
+    ]
+  },
+  "artifacts": {
+    "generated": [
+      {
+        "name": "FILE_MAPPING_DETAILED.csv",
+        "path": "E:\\tbi-loan-platform\\FILE_MAPPING_DETAILED.csv",
+        "description": "Comprehensive file-by-file reuse analysis",
+        "lines": 50
+      },
+      {
+        "name": "AUDIT_REPORT.md",
+        "path": "E:\\tbi-loan-platform\\AUDIT_REPORT.md",
+        "description": "Executive audit report with recommendations",
+        "lines": 270
+      },
+      {
+        "name": "p0_risk_assessment_service.patch",
+        "path": "E:\\tbi-loan-platform\\patches\\p0_risk_assessment_service.patch",
+        "description": "Gemini service → Risk assessment adaptation",
+        "lines": 186
+      },
+      {
+        "name": "p0_auth_banking_enhancement.patch",
+        "path": "E:\\tbi-loan-platform\\patches\\p0_auth_banking_enhancement.patch",
+        "description": "Authentication enhancements for banking",
+        "lines": 204
+      },
+      {
+        "name": "auth.test.ts",
+        "path": "E:\\tbi-loan-platform\\tests\\unit\\auth.test.ts",
+        "description": "Comprehensive auth unit tests",
+        "lines": 415
+      },
+      {
+        "name": "loan-types.ts",
+        "path": "E:\\tbi-loan-platform\\src\\types\\loan-types.ts",
+        "description": "Complete TypeScript type system",
+        "lines": 677
+      },
+      {
+        "name": "PROJECT_SUMMARY.json",
+        "path": "E:\\tbi-loan-platform\\PROJECT_SUMMARY.json",
+        "description": "This comprehensive project summary",
+        "format": "JSON"
+      }
+    ]
+  },
+  "nextSteps": {
+    "immediate": [
+      "Create remaining P0 patch files (adminService, database schema)",
+      "Generate MVP scaffold structure (backend/frontend/prisma folders)",
+      "Implement core risk engine with unit tests",
+      "Create Prisma schema and initial migration"
+    ],
+    "week1-2": [
+      "Complete backend service implementation",
+      "Setup authentication and authorization middleware",
+      "Implement audit logging service",
+      "Create seed data script"
+    ],
+    "week3-4": [
+      "Build frontend components (Decision Board, Explainability Panel)",
+      "Implement risk configuration UI",
+      "Create application forms and document upload",
+      "Integration testing"
+    ],
+    "week5-6": [
+      "End-to-end testing",
+      "Security audit and hardening",
+      "Performance optimization",
+      "Documentation completion"
+    ],
+    "week7-8": [
+      "MVP polish and bug fixes",
+      "Deployment to staging environment",
+      "User acceptance testing",
+      "Production deployment preparation"
+    ]
+  },
+  "humanDecisions": {
+    "required": [
+      {
+        "decision": "Backend Provider Selection",
+        "options": [
+          {
+            "name": "Vercel Serverless",
+            "pros": ["Fast deployment", "Auto-scaling", "Low initial cost"],
+            "cons": ["Vendor lock-in", "Limited customization"]
+          },
+          {
+            "name": "AWS Lambda + API Gateway",
+            "pros": ["Flexible", "Enterprise-grade", "Wide integration options"],
+            "cons": ["Complex setup", "Higher learning curve"]
+          },
+          {
+            "name": "Express.js on ECS/Cloud Run",
+            "pros": ["Full control", "Portable", "Traditional architecture"],
+            "cons": ["More infrastructure management"]
+          }
+        ],
+        "recommendation": "Start with Vercel Serverless for MVP, migrate to AWS for production"
+      },
+      {
+        "decision": "PII Encryption Approach",
+        "options": [
+          {
+            "name": "Application-level encryption",
+            "pros": ["Full control", "No DB changes needed"],
+            "cons": ["Performance overhead", "Key management complexity"]
+          },
+          {
+            "name": "Database-level encryption (TDE)",
+            "pros": ["Transparent", "Better performance", "Managed by DB"],
+            "cons": ["Less granular", "Provider-dependent"]
+          }
+        ],
+        "recommendation": "Hybrid: TDE for all data at rest + application-level for high-sensitivity fields (nationalId, SSN)"
+      }
+    ]
+  },
+  "acceptanceCriteria": {
+    "mvp": [
+      "All P0 patches applied and tested",
+      "Risk engine calculates scores correctly with configurable weights",
+      "Authentication with role-based access working",
+      "Decision board allows drag-and-drop with audit logging",
+      "Explainability panel shows factor contributions",
+      "3 sample applications seed successfully",
+      "Local development setup documented and working",
+      "CI pipeline runs all tests successfully"
+    ],
+    "v1Production": [
+      "Security audit completed with no critical issues",
+      "PII encryption implemented for sensitive fields",
+      "Observability stack integrated (logging, monitoring, alerts)",
+      "Automated deployment pipeline to production",
+      "Load testing completed (100 concurrent users)",
+      "Compliance checklist 100% complete",
+      "Production runbook documented",
+      "Disaster recovery plan tested"
+    ]
+  },
+  "risks": {
+    "technical": [
+      {
+        "risk": "Gemini API rate limits",
+        "impact": "High",
+        "probability": "Medium",
+        "mitigation": "Implement request queuing, caching, and fallback to rule-based assessment"
+      },
+      {
+        "risk": "Database performance at scale",
+        "impact": "Medium",
+        "probability": "Medium",
+        "mitigation": "Proper indexing, query optimization, read replicas if needed"
+      },
+      {
+        "risk": "PII data breach",
+        "impact": "Critical",
+        "probability": "Low",
+        "mitigation": "Encryption, access controls, audit logging, regular security audits"
+      }
+    ],
+    "business": [
+      {
+        "risk": "Regulatory compliance gaps",
+        "impact": "Critical",
+        "probability": "Low",
+        "mitigation": "Legal review, compliance audit, industry best practices"
+      },
+      {
+        "risk": "User adoption resistance",
+        "impact": "Medium",
+        "probability": "Medium",
+        "mitigation": "Training programs, UX testing, gradual rollout"
+      }
+    ]
+  },
+  "totalEffort": {
+    "mvp": {
+      "development": "200-280 hours",
+      "testing": "60-80 hours",
+      "documentation": "20-30 hours",
+      "total": "280-390 hours",
+      "teamSize": "2-3 developers",
+      "duration": "6-8 weeks"
+    },
+    "v1Production": {
+      "additional": "150-200 hours",
+      "securityHardening": "40-60 hours",
+      "cicdSetup": "30-40 hours",
+      "total": "220-300 hours"
+    }
+  }
+}

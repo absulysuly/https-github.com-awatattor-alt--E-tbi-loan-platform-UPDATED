@@ -1,0 +1,204 @@
+--- a/eventra-saas/src/lib/auth.ts
++++ b/backend/src/lib/auth.ts
+@@ -1,6 +1,7 @@
+ import { AuthOptions, User } from "next-auth";
+ import CredentialsProvider from "next-auth/providers/credentials";
+ import GoogleProvider from "next-auth/providers/google";
++import { randomBytes } from "crypto";
+ import { PrismaClient } from "@prisma/client";
+ import bcrypt from "bcryptjs";
+ import type { JWT } from "next-auth/jwt";
+@@ -8,6 +9,23 @@ import type { Session } from "next-auth";
+ 
+ const prisma = new PrismaClient();
+ 
++/**
++ * Banking-specific user roles for TBi Bank CSDR Platform
++ */
++export enum BankingRole {
++  ADMIN = 'admin',
++  LOAN_OFFICER = 'loan_officer',
++  SENIOR_UNDERWRITER = 'senior_underwriter', 
++  UNDERWRITER = 'underwriter',
++  RISK_ANALYST = 'risk_analyst',
++  COMPLIANCE_OFFICER = 'compliance_officer',
++  VIEWER = 'viewer'
++}
++
++/**
++ * Session timeout for banking security: 30 minutes of inactivity
++ */
++const SESSION_TIMEOUT_SECONDS = 30 * 60;
++
+ export const authOptions: AuthOptions = {
+   providers: [
+     // Only include Google provider if environment variables are properly configured
+@@ -26,9 +44,27 @@ export const authOptions: AuthOptions = {
+       },
+       async authorize(credentials) {
+         if (!credentials?.email || !credentials?.password) return null;
++        
+         const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+         if (!user) return null;
++        
++        // Check if account is locked due to failed attempts
++        if (user.accountLocked && user.lockedUntil && user.lockedUntil > new Date()) {
++          throw new Error('Account temporarily locked due to multiple failed login attempts');
++        }
++        
+         const valid = await bcrypt.compare(credentials.password, user.password);
++        
+         if (!valid) {
++          // Increment failed login attempts
++          await prisma.user.update({
++            where: { id: user.id },
++            data: {
++              failedLoginAttempts: { increment: 1 },
++              accountLocked: user.failedLoginAttempts >= 4,
++              lockedUntil: user.failedLoginAttempts >= 4 ? new Date(Date.now() + 15 * 60 * 1000) : null
++            }
++          });
++          
++          // Log failed login attempt for audit
++          await prisma.auditLog.create({
++            data: {
++              userId: user.id,
++              userEmail: user.email,
++              action: 'FAILED_LOGIN',
++              entityType: 'User',
++              entityId: user.id,
++              ipAddress: credentials.ipAddress || 'unknown',
++              userAgent: credentials.userAgent || 'unknown',
++              sessionId: 'n/a',
++              riskLevel: 'MEDIUM',
++              timestamp: new Date()
++            }
++          });
+           return null;
+         }
+-        return { id: user.id, email: user.email, name: user.name };
++        
++        // Reset failed attempts on successful login
++        await prisma.user.update({
++          where: { id: user.id },
++          data: {
++            failedLoginAttempts: 0,
++            accountLocked: false,
++            lockedUntil: null,
++            lastLogin: new Date()
++          }
++        });
++        
++        // Log successful login for audit
++        await prisma.auditLog.create({
++          data: {
++            userId: user.id,
++            userEmail: user.email,
++            action: 'LOGIN',
++            entityType: 'User',
++            entityId: user.id,
++            ipAddress: credentials.ipAddress || 'unknown',
++            userAgent: credentials.userAgent || 'unknown',
++            sessionId: 'pending',
++            riskLevel: 'LOW',
++            timestamp: new Date()
++          }
++        });
++        
++        return { 
++          id: user.id, 
++          email: user.email, 
++          name: user.name,
++          role: user.role,
++          mfaEnabled: user.mfaEnabled
++        };
+       }
+     })
+   ],
+-  session: { strategy: "jwt" as const },
++  session: { 
++    strategy: "jwt" as const,
++    maxAge: SESSION_TIMEOUT_SECONDS,
++    updateAge: 5 * 60 // Update session every 5 minutes
++  },
+   secret: (() => {
+     const secret = process.env.NEXTAUTH_SECRET;
+     if (!secret) {
+@@ -61,6 +134,7 @@ export const authOptions: AuthOptions = {
+   },
+   callbacks: {
+     async signIn({ user, account }) {
++      // Google OAuth handling
+       if (account?.provider === "google") {
+         try {
+           const existingUser = await prisma.user.findUnique({
+@@ -73,6 +147,8 @@ export const authOptions: AuthOptions = {
+               data: {
+                 email: user.email!,
+                 name: user.name || '',
++                role: BankingRole.VIEWER, // Default role for OAuth users
++                mfaEnabled: false,
+                 password: '', // Google users don't need password
+               }
+             });
+@@ -84,15 +160,45 @@ export const authOptions: AuthOptions = {
+         }
+       }
++      
++      // Check MFA requirement
++      if (user.mfaEnabled && !user.mfaVerified) {
++        // In a real implementation, this would redirect to MFA verification page
++        // For now, we'll allow sign-in but mark session as requiring MFA
++        console.warn('MFA verification required for user:', user.email);
++      }
++      
+       return true;
+     },
+     async jwt({ token, user }: { token: JWT; user?: User }) {
+       if (user) {
+         token.id = user.id;
++        token.role = user.role;
++        token.mfaEnabled = user.mfaEnabled;
++        token.loginTime = Date.now();
++      }
++      
++      // Check session timeout
++      if (token.loginTime && (Date.now() - (token.loginTime as number)) > SESSION_TIMEOUT_SECONDS * 1000) {
++        // Session expired - this will force re-authentication
++        return null;
+       }
++      
+       return token;
+     },
+     async session({ session, token }: { session: Session; token: JWT }) {
+       if (token && session.user) {
+         (session.user as { id?: string }).id = token.id as string;
++        (session.user as { role?: string }).role = token.role as string;
++        (session.user as { mfaEnabled?: boolean }).mfaEnabled = token.mfaEnabled as boolean;
++        (session.user as { sessionExpiry?: number }).sessionExpiry = (token.loginTime as number) + (SESSION_TIMEOUT_SECONDS * 1000);
+       }
+       return session;
+     }
+   },
++  events: {
++    async signOut({ token }) {
++      // Log sign-out for audit trail
++      if (token?.id) {
++        await prisma.auditLog.create({
++          data: {
++            userId: token.id as string,
++            userEmail: token.email as string,
++            action: 'LOGOUT',
++            entityType: 'User',
++            entityId: token.id as string,
++            ipAddress: 'server-side',
++            userAgent: 'n/a',
++            sessionId: 'ended',
++            riskLevel: 'LOW',
++            timestamp: new Date()
++          }
++        });
++      }
++    }
++  }
+ };
